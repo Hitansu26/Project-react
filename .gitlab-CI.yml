@@ -1,0 +1,21 @@
+stages:
+  - deploy
+
+Deploy: 
+  stage: deploy
+  before_script:
+  - 'command -v ssh-agent >/dev/null || ( apk add --update openssh )' 
+  - eval $(ssh-agent -s)
+  - echo "$SSH_PRIVATEKEY" | tr -d '\r' | ssh-add -
+  - mkdir -p ~/.ssh
+  - chmod 700 ~/.ssh
+  - ssh-keyscan $IP_ADDRESS >> ~/.ssh/known_hosts
+  - chmod 644 ~/.ssh/known_hosts
+  script:
+    - sudo apt install zip -y
+    - mkdir .public
+    - cp -r * .public
+    - mv .public public
+    - zip -r public.zip public
+    - scp -o StrictHostKeyChecking=no public.zip ubuntu@43.204.112.225:/var/www/html
+    - ssh -o StrictHostKeyChecking=no ubuntu@43.204.112.225 "cd /var/www/html; touch one.txt; unzip public.zip"
